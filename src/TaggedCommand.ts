@@ -1,5 +1,5 @@
 import { ReplaySubject, of } from 'rxjs';
-import { filter, takeWhile, concatMap, reduce, timeout } from 'rxjs/operators';
+import { filter, takeWhile, concatMap, reduce, timeout, catchError } from 'rxjs/operators';
 
 import DataStream from './DataStream';
 import debug from './debug';
@@ -33,6 +33,13 @@ export class TaggedCommand<T = null> {
         return currentValue;
       }),
       timeout(this.responseTimeout),
+      catchError(err => {
+        if (err.name === 'TimeoutError') {
+          debug('Timeout occurred');
+          this.data$.error('Timeout occurred');
+        }
+        return of(null);
+      })
     ).subscribe(res => {
       this.data$.next(res);
       this.data$.complete();
